@@ -50,7 +50,7 @@ public class RosterController {
             return "redirect:/roster";
         }
         try {
-            int count = rosterService.importFromExcel(file, role);
+            int count = rosterService.importFromFile(file, role);
             redirectAttributes.addFlashAttribute("message",
                     "Imported " + count + " " + (role == PersonRole.LEARNER ? "learners" : "tutors") + ".");
         } catch (IllegalArgumentException | IOException e) {

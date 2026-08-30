@@ -2,6 +2,9 @@ package com.personal.esttimeconverter.roster;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
@@ -15,6 +18,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -95,14 +100,80 @@ public class RosterService {
     }
 
     /**
-     * Imports rows from an Excel export. Looks for a header row containing a
-     * column with "name" in it and a column with "email" in it (case-insensitive);
-     * every person found is added under the given role. Existing entries with the
-     * same email and role are updated rather than duplicated.
+     * Imports rows from the platform's user export, whether it's a .csv file
+     * or an Excel (.xlsx/.xls) file — decided by the uploaded file's name.
+     * Looks for a header row/line containing a column with "name" in it and a
+     * column with "email" in it (case-insensitive); every person found is
+     * added under the given role. Existing entries with the same email and
+     * role are updated rather than duplicated.
      *
      * @return number of people imported
      */
-    public synchronized int importFromExcel(MultipartFile file, PersonRole role) throws IOException {
+    public synchronized int importFromFile(MultipartFile file, PersonRole role) throws IOException {
+        String filename = file.getOriginalFilename();
+        String lower = filename == null ? "" : filename.toLowerCase(Locale.ROOT);
+
+        int imported;
+        if (lower.endsWith(".csv")) {
+            imported = importFromCsv(file, role);
+        } else if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
+            imported = importFromExcel(file, role);
+        } else {
+            throw new IllegalArgumentException("Unsupported file type — upload a .csv, .xlsx, or .xls file");
+        }
+
+        save();
+        return imported;
+    }
+
+    private int importFromCsv(MultipartFile file, PersonRole role) throws IOException {
+        try (InputStream in = file.getInputStream();
+             InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8);
+             CSVParser parser = CSVFormat.DEFAULT.builder().setTrim(true).build().parse(reader)) {
+
+            List<CSVRecord> records = parser.getRecords();
+            if (records.isEmpty()) {
+                throw new IllegalArgumentException("The uploaded file has no rows");
+            }
+
+            CSVRecord header = records.get(0);
+            int nameCol = -1;
+            int emailCol = -1;
+            for (int i = 0; i < header.size(); i++) {
+                String value = header.get(i).toLowerCase(Locale.ROOT);
+                if (nameCol == -1 && value.contains("name")) {
+                    nameCol = i;
+                }
+                if (emailCol == -1 && value.contains("email")) {
+                    emailCol = i;
+                }
+            }
+
+            if (nameCol == -1 || emailCol == -1) {
+                throw new IllegalArgumentException(
+                        "Couldn't find both a 'name' column and an 'email' column in the header row");
+            }
+
+            int imported = 0;
+            for (int r = 1; r < records.size(); r++) {
+                CSVRecord record = records.get(r);
+                if (nameCol >= record.size() || emailCol >= record.size()) {
+                    continue;
+                }
+                String name = record.get(nameCol).trim();
+                String email = record.get(emailCol).trim();
+                if (name.isEmpty() || email.isEmpty()) {
+                    continue;
+                }
+                upsert(name, email, role);
+                imported++;
+            }
+
+            return imported;
+        }
+    }
+
+    private int importFromExcel(MultipartFile file, PersonRole role) throws IOException {
         try (InputStream in = file.getInputStream(); Workbook workbook = WorkbookFactory.create(in)) {
             Sheet sheet = workbook.getSheetAt(0);
             if (sheet == null || sheet.getPhysicalNumberOfRows() == 0) {
@@ -142,7 +213,6 @@ public class RosterService {
                 imported++;
             }
 
-            save();
             return imported;
         }
     }
@@ -167,3 +237,4 @@ public class RosterService {
         return cell.toString();
     }
 }
+

@@ -19,9 +19,9 @@
 
     <section>
         <h2>Import from the platform's user export</h2>
-        <p class="hint">Upload the Excel file the platform exports. It needs a header row with a column
-            containing "name" and a column containing "email" — exact header text doesn't matter.
-            Import learners and tutors separately.</p>
+        <p class="hint">Upload the file the platform exports — .csv, .xlsx, or .xls all work. It needs a
+            header row with a column containing "name" and a column containing "email" — exact header
+            text doesn't matter. Import learners and tutors separately.</p>
         <form th:action="@{/roster/import}" method="post" enctype="multipart/form-data">
             <div class="row">
                 <div>
@@ -32,8 +32,8 @@
                     </select>
                 </div>
                 <div>
-                    <label for="importFile">Excel file</label>
-                    <input type="file" id="importFile" name="file" accept=".xlsx,.xls">
+                    <label for="importFile">File</label>
+                    <input type="file" id="importFile" name="file" accept=".csv,.xlsx,.xls">
                 </div>
             </div>
             <button type="submit">Import</button>

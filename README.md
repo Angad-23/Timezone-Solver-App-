@@ -13,9 +13,9 @@ What's on the site:
   columns (`learner_email`, `learner_name`, `tutor_email`, `tutor_name`,
   `lesson_starttime`, `lesson_endtime`, `teaching_subject_identifier`).
 - **Roster page** — add learners/tutors one at a time, or import them in
-  bulk from the Excel file the platform exports for all its users (it
-  just needs a "name" column and an "email" column somewhere in the
-  header row — exact header text doesn't matter).
+  bulk from the file the platform exports for all its users (.csv, .xlsx,
+  or .xls all work — it just needs a "name" column and an "email" column
+  somewhere in the header row, exact header text doesn't matter).
 - Two standalone time converters (single + bulk) also live on the Sessions
   page for quick one-off conversions that don't need the roster.
 
