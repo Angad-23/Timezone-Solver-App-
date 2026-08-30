@@ -102,31 +102,34 @@ public class RosterService {
     /**
      * Imports rows from the platform's user export, whether it's a .csv file
      * or an Excel (.xlsx/.xls) file — decided by the uploaded file's name.
-     * Looks for a header row/line containing a column with "name" in it and a
-     * column with "email" in it (case-insensitive); every person found is
-     * added under the given role. Existing entries with the same email and
-     * role are updated rather than duplicated.
-     *
-     * @return number of people imported
+     * Looks for a header column containing "name" and one containing "email"
+     * (case-insensitive). If a column containing "type" or "role" is also
+     * present, each row's role (learner, tutor, or both) is read from it —
+     * a value like "Learner | Tutor" adds the person to both lists. If no
+     * such column exists, every row falls back to the given role. Existing
+     * entries with the same email and role are updated rather than duplicated.
      */
-    public synchronized int importFromFile(MultipartFile file, PersonRole role) throws IOException {
+    public synchronized ImportResult importFromFile(MultipartFile file, PersonRole fallbackRole) throws IOException {
         String filename = file.getOriginalFilename();
         String lower = filename == null ? "" : filename.toLowerCase(Locale.ROOT);
 
-        int imported;
+        ImportResult result;
         if (lower.endsWith(".csv")) {
-            imported = importFromCsv(file, role);
+            result = importFromCsv(file, fallbackRole);
         } else if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
-            imported = importFromExcel(file, role);
+            result = importFromExcel(file, fallbackRole);
         } else {
             throw new IllegalArgumentException("Unsupported file type — upload a .csv, .xlsx, or .xls file");
         }
 
         save();
-        return imported;
+        return result;
     }
 
-    private int importFromCsv(MultipartFile file, PersonRole role) throws IOException {
+    public record ImportResult(int learnersImported, int tutorsImported) {
+    }
+
+    private ImportResult importFromCsv(MultipartFile file, PersonRole fallbackRole) throws IOException {
         try (InputStream in = file.getInputStream();
              InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8);
              CSVParser parser = CSVFormat.DEFAULT.builder().setTrim(true).build().parse(reader)) {
@@ -139,6 +142,7 @@ public class RosterService {
             CSVRecord header = records.get(0);
             int nameCol = -1;
             int emailCol = -1;
+            int typeCol = -1;
             for (int i = 0; i < header.size(); i++) {
                 String value = header.get(i).toLowerCase(Locale.ROOT);
                 if (nameCol == -1 && value.contains("name")) {
@@ -147,6 +151,9 @@ public class RosterService {
                 if (emailCol == -1 && value.contains("email")) {
                     emailCol = i;
                 }
+                if (typeCol == -1 && (value.contains("type") || value.contains("role"))) {
+                    typeCol = i;
+                }
             }
 
             if (nameCol == -1 || emailCol == -1) {
@@ -154,7 +161,8 @@ public class RosterService {
                         "Couldn't find both a 'name' column and an 'email' column in the header row");
             }
 
-            int imported = 0;
+            int learners = 0;
+            int tutors = 0;
             for (int r = 1; r < records.size(); r++) {
                 CSVRecord record = records.get(r);
                 if (nameCol >= record.size() || emailCol >= record.size()) {
@@ -165,15 +173,22 @@ public class RosterService {
                 if (name.isEmpty() || email.isEmpty()) {
                     continue;
                 }
-                upsert(name, email, role);
-                imported++;
+                String typeText = (typeCol != -1 && typeCol < record.size()) ? record.get(typeCol) : null;
+                for (PersonRole role : rolesFor(typeText, fallbackRole)) {
+                    upsert(name, email, role);
+                    if (role == PersonRole.LEARNER) {
+                        learners++;
+                    } else {
+                        tutors++;
+                    }
+                }
             }
 
-            return imported;
+            return new ImportResult(learners, tutors);
         }
     }
 
-    private int importFromExcel(MultipartFile file, PersonRole role) throws IOException {
+    private ImportResult importFromExcel(MultipartFile file, PersonRole fallbackRole) throws IOException {
         try (InputStream in = file.getInputStream(); Workbook workbook = WorkbookFactory.create(in)) {
             Sheet sheet = workbook.getSheetAt(0);
             if (sheet == null || sheet.getPhysicalNumberOfRows() == 0) {
@@ -183,6 +198,7 @@ public class RosterService {
             Row header = sheet.getRow(sheet.getFirstRowNum());
             int nameCol = -1;
             int emailCol = -1;
+            int typeCol = -1;
             for (Cell cell : header) {
                 String value = cellToString(cell).toLowerCase(Locale.ROOT);
                 if (nameCol == -1 && value.contains("name")) {
@@ -191,6 +207,9 @@ public class RosterService {
                 if (emailCol == -1 && value.contains("email")) {
                     emailCol = cell.getColumnIndex();
                 }
+                if (typeCol == -1 && (value.contains("type") || value.contains("role"))) {
+                    typeCol = cell.getColumnIndex();
+                }
             }
 
             if (nameCol == -1 || emailCol == -1) {
@@ -198,7 +217,8 @@ public class RosterService {
                         "Couldn't find both a 'name' column and an 'email' column in the header row");
             }
 
-            int imported = 0;
+            int learners = 0;
+            int tutors = 0;
             for (int r = sheet.getFirstRowNum() + 1; r <= sheet.getLastRowNum(); r++) {
                 Row row = sheet.getRow(r);
                 if (row == null) {
@@ -209,12 +229,42 @@ public class RosterService {
                 if (name.isEmpty() || email.isEmpty()) {
                     continue;
                 }
-                upsert(name, email, role);
-                imported++;
+                String typeText = typeCol != -1 ? cellToString(row.getCell(typeCol)) : null;
+                for (PersonRole role : rolesFor(typeText, fallbackRole)) {
+                    upsert(name, email, role);
+                    if (role == PersonRole.LEARNER) {
+                        learners++;
+                    } else {
+                        tutors++;
+                    }
+                }
             }
 
-            return imported;
+            return new ImportResult(learners, tutors);
         }
+    }
+
+    /**
+     * Reads which role(s) a row belongs to from its type/role text, e.g.
+     * "Learner", "Tutor", or "Learner | Tutor" all work regardless of the
+     * exact separator. Falls back to the given role when the text is blank,
+     * absent, or doesn't mention either role by name.
+     */
+    private List<PersonRole> rolesFor(String typeText, PersonRole fallbackRole) {
+        List<PersonRole> roles = new ArrayList<>();
+        if (typeText != null && !typeText.isBlank()) {
+            String lower = typeText.toLowerCase(Locale.ROOT);
+            if (lower.contains("learner") || lower.contains("student")) {
+                roles.add(PersonRole.LEARNER);
+            }
+            if (lower.contains("tutor") || lower.contains("teacher")) {
+                roles.add(PersonRole.TUTOR);
+            }
+        }
+        if (roles.isEmpty()) {
+            roles.add(fallbackRole);
+        }
+        return roles;
     }
 
     private void upsert(String name, String email, PersonRole role) {

@@ -20,15 +20,16 @@
     <section>
         <h2>Import from the platform's user export</h2>
         <p class="hint">Upload the file the platform exports — .csv, .xlsx, or .xls all work. It needs a
-            header row with a column containing "name" and a column containing "email" — exact header
-            text doesn't matter. Import learners and tutors separately.</p>
+            header row with a column containing "name" and a column containing "email". If there's also
+            a "Type" or "Role" column (like the platform's export has), learner/tutor is read straight
+            from it — a value such as "Learner | Tutor" adds that person to both lists automatically.</p>
         <form th:action="@{/roster/import}" method="post" enctype="multipart/form-data">
             <div class="row">
                 <div>
-                    <label for="importRole">These rows are</label>
+                    <label for="importRole">Fallback role (only used if the file has no Type/Role column)</label>
                     <select id="importRole" name="role">
-                        <option value="LEARNER">Learners</option>
-                        <option value="TUTOR">Tutors</option>
+                        <option value="LEARNER">Learner</option>
+                        <option value="TUTOR">Tutor</option>
                     </select>
                 </div>
                 <div>

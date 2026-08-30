@@ -50,9 +50,10 @@ public class RosterController {
             return "redirect:/roster";
         }
         try {
-            int count = rosterService.importFromFile(file, role);
+            RosterService.ImportResult result = rosterService.importFromFile(file, role);
             redirectAttributes.addFlashAttribute("message",
-                    "Imported " + count + " " + (role == PersonRole.LEARNER ? "learners" : "tutors") + ".");
+                    "Imported " + result.learnersImported() + " learners and "
+                            + result.tutorsImported() + " tutors.");
         } catch (IllegalArgumentException | IOException e) {
             redirectAttributes.addFlashAttribute("error", "Import failed: " + e.getMessage());
         }
