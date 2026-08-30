@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Roster — EST time converter</title>
+    <link rel="stylesheet" th:href="@{/styles.css}">
+</head>
+<body>
+<nav>
+    <a th:href="@{/}">Sessions</a>
+    <a th:href="@{/roster}" class="active">Roster</a>
+</nav>
+<main>
+    <h1>Roster</h1>
+    <p class="subtitle">Your saved learners and tutors, so you can pick them from a list instead of retyping names and emails.</p>
+
+    <div class="flash success" th:if="${message}" th:text="${message}"></div>
+    <div class="flash error" th:if="${error}" th:text="${error}"></div>
+
+    <section>
+        <h2>Import from the platform's user export</h2>
+        <p class="hint">Upload the Excel file the platform exports. It needs a header row with a column
+            containing "name" and a column containing "email" — exact header text doesn't matter.
+            Import learners and tutors separately.</p>
+        <form th:action="@{/roster/import}" method="post" enctype="multipart/form-data">
+            <div class="row">
+                <div>
+                    <label for="importRole">These rows are</label>
+                    <select id="importRole" name="role">
+                        <option value="LEARNER">Learners</option>
+                        <option value="TUTOR">Tutors</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="importFile">Excel file</label>
+                    <input type="file" id="importFile" name="file" accept=".xlsx,.xls">
+                </div>
+            </div>
+            <button type="submit">Import</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Add one person manually</h2>
+        <form th:action="@{/roster/add}" method="post">
+            <div class="row">
+                <div>
+                    <label for="addName">Name</label>
+                    <input type="text" id="addName" name="name" placeholder="Aidan Pittman">
+                </div>
+                <div>
+                    <label for="addEmail">Email</label>
+                    <input type="email" id="addEmail" name="email" placeholder="name@example.com">
+                </div>
+            </div>
+            <label for="addRole">Role</label>
+            <select id="addRole" name="role">
+                <option value="LEARNER">Learner</option>
+                <option value="TUTOR">Tutor</option>
+            </select>
+            <button type="submit">Add</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Learners <span th:if="${!#lists.isEmpty(learners)}" th:text="'(' + ${#lists.size(learners)} + ')'"></span></h2>
+        <p class="empty" th:if="${#lists.isEmpty(learners)}">No learners saved yet.</p>
+        <table th:if="${!#lists.isEmpty(learners)}">
+            <thead><tr><th>Name</th><th>Email</th></tr></thead>
+            <tbody>
+            <tr th:each="learner : ${learners}">
+                <td th:text="${learner.name}"></td>
+                <td th:text="${learner.email}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2>Tutors <span th:if="${!#lists.isEmpty(tutors)}" th:text="'(' + ${#lists.size(tutors)} + ')'"></span></h2>
+        <p class="empty" th:if="${#lists.isEmpty(tutors)}">No tutors saved yet.</p>
+        <table th:if="${!#lists.isEmpty(tutors)}">
+            <thead><tr><th>Name</th><th>Email</th></tr></thead>
+            <tbody>
+            <tr th:each="tutor : ${tutors}">
+                <td th:text="${tutor.name}"></td>
+                <td th:text="${tutor.email}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+</main>
+</body>
+</html>

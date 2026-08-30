@@ -3,137 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <title>EST to platform time converter</title>
-    <style>
-        :root {
-            --border: #d7d3c9;
-            --text: #2c2c2a;
-            --muted: #6b6a65;
-            --accent: #185fa5;
-            --bg: #f7f6f2;
-            --card: #ffffff;
-            --error: #a32d2d;
-        }
-        * { box-sizing: border-box; }
-        body {
-            font-family: -apple-system, "Segoe UI", Arial, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 2rem 1rem 4rem;
-        }
-        main {
-            max-width: 720px;
-            margin: 0 auto;
-        }
-        h1 {
-            font-size: 22px;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-        p.subtitle {
-            color: var(--muted);
-            margin-top: 0;
-            margin-bottom: 2rem;
-            font-size: 14px;
-        }
-        section {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-        h2 {
-            font-size: 16px;
-            font-weight: 600;
-            margin-top: 0;
-        }
-        label {
-            display: block;
-            font-size: 13px;
-            color: var(--muted);
-            margin-bottom: 4px;
-        }
-        input, textarea {
-            width: 100%;
-            padding: 8px 10px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            font-size: 14px;
-            font-family: inherit;
-            margin-bottom: 1rem;
-        }
-        textarea { min-height: 120px; font-family: ui-monospace, monospace; }
-        .row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-        button {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 6px;
-            font-size: 14px;
-            cursor: pointer;
-        }
-        button:hover { opacity: 0.9; }
-        .error {
-            color: var(--error);
-            font-size: 13px;
-            margin-top: -12px;
-            margin-bottom: 12px;
-        }
-        .result {
-            margin-top: 1.25rem;
-            background: #eef4fa;
-            border-radius: 8px;
-            padding: 1rem;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-        .result div p.label {
-            font-size: 12px;
-            color: var(--muted);
-            margin: 0 0 4px;
-        }
-        .result div p.value {
-            font-family: ui-monospace, monospace;
-            font-size: 15px;
-            font-weight: 600;
-            margin: 0;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 1rem;
-            font-size: 13px;
-        }
-        th, td {
-            text-align: left;
-            padding: 6px 8px;
-            border-bottom: 1px solid var(--border);
-        }
-        td.mono { font-family: ui-monospace, monospace; }
-        tr.error-row td { color: var(--error); }
-        .hint {
-            font-size: 12px;
-            color: var(--muted);
-            margin-top: -6px;
-            margin-bottom: 1rem;
-        }
-    </style>
+    <link rel="stylesheet" th:href="@{/styles.css}">
 </head>
 <body>
+<nav>
+    <a th:href="@{/}" class="active">Sessions</a>
+    <a th:href="@{/roster}">Roster</a>
+</nav>
 <main>
     <h1>EST to platform time converter</h1>
-    <p class="subtitle">Enter lesson times in EST — get back the exact string the upload sheet expects.</p>
+    <p class="subtitle">Pick a learner and tutor, set the EST time, and get a row ready for the upload sheet.</p>
+
+    <div class="flash success" th:if="${message}" th:text="${message}"></div>
+    <div class="flash error" th:if="${error}" th:text="${error}"></div>
 
     <section>
-        <h2>Single lesson</h2>
-        <form th:action="@{/convert}" th:object="${form}" method="post">
+        <h2>New session</h2>
+
+        <div th:if="${#lists.isEmpty(learners) or #lists.isEmpty(tutors)}" class="hint">
+            Add learners and tutors on the <a th:href="@{/roster}">Roster</a> page first — either one by
+            one or by importing the platform's user export.
+        </div>
+
+        <form th:action="@{/session/add}" th:object="${sessionForm}" method="post">
+            <div class="row">
+                <div>
+                    <label for="learnerEmail">Learner</label>
+                    <select id="learnerEmail" th:field="*{learnerEmail}">
+                        <option value="">Select a learner</option>
+                        <option th:each="learner : ${learners}"
+                                th:value="${learner.email}"
+                                th:text="${learner.name} + ' (' + ${learner.email} + ')'"></option>
+                    </select>
+                    <div class="error" th:if="${#fields.hasErrors('learnerEmail')}" th:errors="*{learnerEmail}"></div>
+                </div>
+                <div>
+                    <label for="tutorEmail">Tutor</label>
+                    <select id="tutorEmail" th:field="*{tutorEmail}">
+                        <option value="">Select a tutor</option>
+                        <option th:each="tutor : ${tutors}"
+                                th:value="${tutor.email}"
+                                th:text="${tutor.name} + ' (' + ${tutor.email} + ')'"></option>
+                    </select>
+                    <div class="error" th:if="${#fields.hasErrors('tutorEmail')}" th:errors="*{tutorEmail}"></div>
+                </div>
+            </div>
+
+            <label for="subject">Subject</label>
+            <input type="text" id="subject" th:field="*{subject}" placeholder="e.g. Russian">
+            <div class="error" th:if="${#fields.hasErrors('subject')}" th:errors="*{subject}"></div>
+
             <div class="row">
                 <div>
                     <label for="date">Lesson date</label>
@@ -157,6 +76,71 @@
                     <input type="number" id="offsetHours" th:field="*{offsetHours}">
                 </div>
             </div>
+
+            <button type="submit">Add to upload sheet</button>
+        </form>
+    </section>
+
+    <section>
+        <h2>Upload sheet <span th:if="${!#lists.isEmpty(pendingSessions)}" th:text="'(' + ${#lists.size(pendingSessions)} + ')'"></span></h2>
+
+        <p class="empty" th:if="${#lists.isEmpty(pendingSessions)}">No sessions added yet.</p>
+
+        <table th:if="${!#lists.isEmpty(pendingSessions)}">
+            <thead>
+            <tr>
+                <th>Learner</th>
+                <th>Tutor</th>
+                <th>Subject</th>
+                <th>Start</th>
+                <th>End</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="row : ${pendingSessions}">
+                <td th:text="${row.learnerName}"></td>
+                <td th:text="${row.tutorName}"></td>
+                <td th:text="${row.teachingSubjectIdentifier}"></td>
+                <td class="mono" th:text="${row.lessonStartTime}"></td>
+                <td class="mono" th:text="${row.lessonEndTime}"></td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div class="actions" th:if="${!#lists.isEmpty(pendingSessions)}" style="margin-top: 1rem;">
+            <a th:href="@{/sessions/download}" style="display:inline-block; background: var(--accent); color: white; padding: 10px 18px; border-radius: 6px; font-size: 14px; text-decoration: none;">Download Excel</a>
+            <form th:action="@{/sessions/clear}" method="post" style="margin: 0;">
+                <button type="submit" class="secondary">Clear all</button>
+            </form>
+        </div>
+    </section>
+
+    <section>
+        <h2>Just converting one time?</h2>
+        <form th:action="@{/convert}" th:object="${form}" method="post">
+            <div class="row">
+                <div>
+                    <label for="convDate">Lesson date</label>
+                    <input type="date" id="convDate" th:field="*{date}">
+                    <div class="error" th:if="${#fields.hasErrors('date')}" th:errors="*{date}"></div>
+                </div>
+                <div>
+                    <label for="convStartTime">Start time (EST)</label>
+                    <input type="time" id="convStartTime" th:field="*{startTime}">
+                    <div class="error" th:if="${#fields.hasErrors('startTime')}" th:errors="*{startTime}"></div>
+                </div>
+            </div>
+            <div class="row">
+                <div>
+                    <label for="convDuration">Duration (minutes)</label>
+                    <input type="number" id="convDuration" min="1" step="5" th:field="*{durationMinutes}">
+                    <div class="error" th:if="${#fields.hasErrors('durationMinutes')}" th:errors="*{durationMinutes}"></div>
+                </div>
+                <div>
+                    <label for="convOffset">Offset hours</label>
+                    <input type="number" id="convOffset" th:field="*{offsetHours}">
+                </div>
+            </div>
             <button type="submit">Convert</button>
 
             <div class="result" th:if="${result != null}">
@@ -173,7 +157,7 @@
     </section>
 
     <section>
-        <h2>Bulk conversion</h2>
+        <h2>Bulk time conversion</h2>
         <p class="hint">One lesson per line: <code>yyyy-MM-dd HH:mm,duration</code> (duration is optional, defaults below).</p>
         <form th:action="@{/convert-bulk}" method="post">
             <label for="bulkInput">EST lesson times</label>

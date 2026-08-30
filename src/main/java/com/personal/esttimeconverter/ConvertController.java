@@ -1,5 +1,8 @@
 package com.personal.esttimeconverter;
 
+import com.personal.esttimeconverter.roster.RosterService;
+import com.personal.esttimeconverter.session.SessionForm;
+import com.personal.esttimeconverter.session.SessionService;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -14,13 +17,20 @@ import java.util.List;
 @Controller
 public class ConvertController {
 
+    private final RosterService rosterService;
+    private final SessionService sessionService;
+
+    public ConvertController(RosterService rosterService, SessionService sessionService) {
+        this.rosterService = rosterService;
+        this.sessionService = sessionService;
+    }
+
     @GetMapping("/")
     public String index(Model model) {
         if (!model.containsAttribute("form")) {
             model.addAttribute("form", new ConvertForm());
         }
-        model.addAttribute("bulkOffsetHours", 4);
-        model.addAttribute("bulkDefaultDuration", 30);
+        addCommonAttributes(model);
         return "index";
     }
 
@@ -28,8 +38,7 @@ public class ConvertController {
     public String convert(@Valid @ModelAttribute("form") ConvertForm form,
                            BindingResult bindingResult,
                            Model model) {
-        model.addAttribute("bulkOffsetHours", 4);
-        model.addAttribute("bulkDefaultDuration", 30);
+        addCommonAttributes(model);
 
         if (bindingResult.hasErrors()) {
             return "index";
@@ -54,10 +63,26 @@ public class ConvertController {
         model.addAttribute("bulkInput", bulkInput);
         model.addAttribute("bulkOffsetHours", bulkOffsetHours);
         model.addAttribute("bulkDefaultDuration", bulkDefaultDuration);
+        addCommonAttributes(model);
 
         List<BulkRow> rows = BulkConverter.convertLines(bulkInput, bulkOffsetHours, bulkDefaultDuration);
         model.addAttribute("bulkRows", rows);
 
         return "index";
+    }
+
+    private void addCommonAttributes(Model model) {
+        if (!model.containsAttribute("bulkOffsetHours")) {
+            model.addAttribute("bulkOffsetHours", 4);
+        }
+        if (!model.containsAttribute("bulkDefaultDuration")) {
+            model.addAttribute("bulkDefaultDuration", 30);
+        }
+        if (!model.containsAttribute("sessionForm")) {
+            model.addAttribute("sessionForm", new SessionForm());
+        }
+        model.addAttribute("learners", rosterService.getLearners());
+        model.addAttribute("tutors", rosterService.getTutors());
+        model.addAttribute("pendingSessions", sessionService.getAll());
     }
 }
