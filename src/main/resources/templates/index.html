@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>EST to platform time converter</title>
+    <style>
+        :root {
+            --border: #d7d3c9;
+            --text: #2c2c2a;
+            --muted: #6b6a65;
+            --accent: #185fa5;
+            --bg: #f7f6f2;
+            --card: #ffffff;
+            --error: #a32d2d;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, "Segoe UI", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 2rem 1rem 4rem;
+        }
+        main {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        p.subtitle {
+            color: var(--muted);
+            margin-top: 0;
+            margin-bottom: 2rem;
+            font-size: 14px;
+        }
+        section {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        h2 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 0;
+        }
+        label {
+            display: block;
+            font-size: 13px;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+            margin-bottom: 1rem;
+        }
+        textarea { min-height: 120px; font-family: ui-monospace, monospace; }
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        button:hover { opacity: 0.9; }
+        .error {
+            color: var(--error);
+            font-size: 13px;
+            margin-top: -12px;
+            margin-bottom: 12px;
+        }
+        .result {
+            margin-top: 1.25rem;
+            background: #eef4fa;
+            border-radius: 8px;
+            padding: 1rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .result div p.label {
+            font-size: 12px;
+            color: var(--muted);
+            margin: 0 0 4px;
+        }
+        .result div p.value {
+            font-family: ui-monospace, monospace;
+            font-size: 15px;
+            font-weight: 600;
+            margin: 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+            font-size: 13px;
+        }
+        th, td {
+            text-align: left;
+            padding: 6px 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        td.mono { font-family: ui-monospace, monospace; }
+        tr.error-row td { color: var(--error); }
+        .hint {
+            font-size: 12px;
+            color: var(--muted);
+            margin-top: -6px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <h1>EST to platform time converter</h1>
+    <p class="subtitle">Enter lesson times in EST — get back the exact string the upload sheet expects.</p>
+
+    <section>
+        <h2>Single lesson</h2>
+        <form th:action="@{/convert}" th:object="${form}" method="post">
+            <div class="row">
+                <div>
+                    <label for="date">Lesson date</label>
+                    <input type="date" id="date" th:field="*{date}">
+                    <div class="error" th:if="${#fields.hasErrors('date')}" th:errors="*{date}"></div>
+                </div>
+                <div>
+                    <label for="startTime">Start time (EST)</label>
+                    <input type="time" id="startTime" th:field="*{startTime}">
+                    <div class="error" th:if="${#fields.hasErrors('startTime')}" th:errors="*{startTime}"></div>
+                </div>
+            </div>
+            <div class="row">
+                <div>
+                    <label for="durationMinutes">Duration (minutes)</label>
+                    <input type="number" id="durationMinutes" min="1" step="5" th:field="*{durationMinutes}">
+                    <div class="error" th:if="${#fields.hasErrors('durationMinutes')}" th:errors="*{durationMinutes}"></div>
+                </div>
+                <div>
+                    <label for="offsetHours">Offset hours (platform ahead of EST)</label>
+                    <input type="number" id="offsetHours" th:field="*{offsetHours}">
+                </div>
+            </div>
+            <button type="submit">Convert</button>
+
+            <div class="result" th:if="${result != null}">
+                <div>
+                    <p class="label">lesson_starttime</p>
+                    <p class="value" th:text="${result.lessonStartTime}"></p>
+                </div>
+                <div>
+                    <p class="label">lesson_endtime</p>
+                    <p class="value" th:text="${result.lessonEndTime}"></p>
+                </div>
+            </div>
+        </form>
+    </section>
+
+    <section>
+        <h2>Bulk conversion</h2>
+        <p class="hint">One lesson per line: <code>yyyy-MM-dd HH:mm,duration</code> (duration is optional, defaults below).</p>
+        <form th:action="@{/convert-bulk}" method="post">
+            <label for="bulkInput">EST lesson times</label>
+            <textarea id="bulkInput" name="bulkInput" placeholder="2025-05-12 09:00,30&#10;2025-05-13 14:00,45" th:text="${bulkInput}"></textarea>
+
+            <div class="row">
+                <div>
+                    <label for="bulkOffsetHours">Offset hours</label>
+                    <input type="number" id="bulkOffsetHours" name="bulkOffsetHours" th:value="${bulkOffsetHours}">
+                </div>
+                <div>
+                    <label for="bulkDefaultDuration">Default duration (minutes)</label>
+                    <input type="number" id="bulkDefaultDuration" name="bulkDefaultDuration" th:value="${bulkDefaultDuration}">
+                </div>
+            </div>
+            <button type="submit">Convert all</button>
+        </form>
+
+        <table th:if="${bulkRows != null and !bulkRows.isEmpty()}">
+            <thead>
+            <tr>
+                <th>Input</th>
+                <th>lesson_starttime</th>
+                <th>lesson_endtime</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="row : ${bulkRows}" th:classappend="${row.hasError() ? 'error-row' : ''}">
+                <td th:text="${row.inputLine}"></td>
+                <td class="mono" th:text="${row.hasError() ? row.error : row.lessonStartTime}"></td>
+                <td class="mono" th:text="${row.hasError() ? '' : row.lessonEndTime}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <p class="hint">
+        Note: this uses a flat offset (default 4 hours). If the platform follows real US Eastern
+        clock time rather than fixed EST, the correct offset is 4 hours during Daylight Saving
+        (roughly March–November) and 5 hours during Standard Time (roughly November–March).
+        Adjust the offset field above if needed.
+    </p>
+</main>
+</body>
+</html>
