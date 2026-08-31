@@ -2,7 +2,7 @@
 
 A tiny personal Spring Boot app that builds rows for a tutoring platform's
 lesson upload sheet: pick a learner and tutor from a saved roster, set an
-EST time, and get back a row with everything filled in — including the
+EST time, and get back a row with everything filled in including the
 platform's `lesson_starttime` / `lesson_endtime` format (EST + a fixed
 offset, default 4 hours).
 
