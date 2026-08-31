@@ -74,11 +74,18 @@ public class ConvertController {
     }
 
     @PostMapping("/convert-ist")
-    public String convertIst(@RequestParam LocalDate istDate,
-                             @RequestParam LocalTime istTime,
+    public String convertIst(@RequestParam(required = false) LocalDate istDate,
+                             @RequestParam(required = false) LocalTime istTime,
                              Model model) {
         model.addAttribute("form", new ConvertForm());
         addCommonAttributes(model);
+
+        if (istDate == null || istTime == null) {
+            model.addAttribute("istError", "Please fill in both the date and time.");
+            model.addAttribute("istDate", istDate);
+            model.addAttribute("istTime", istTime);
+            return "index";
+        }
 
         LocalDateTime istDateTime = istDate.atTime(istTime);
         model.addAttribute("istResult", IstEstConverter.convert(istDateTime));
