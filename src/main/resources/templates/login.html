@@ -2,12 +2,16 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Log in — EST time converter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Log in - EST time converter</title>
     <link rel="stylesheet" th:href="@{/styles.css}">
 </head>
-<body>
-<main style="max-width: 380px; padding-top: 4rem;">
-    <h1>EST time converter</h1>
+<body class="auth">
+<main class="auth-main">
+    <div class="auth-logo">
+        <img th:src="@{/logo.png}" alt="EST Time Converter logo">
+    </div>
+    <h1>Time Converter</h1>
     <p class="subtitle">Sign in to continue.</p>
 
     <section>

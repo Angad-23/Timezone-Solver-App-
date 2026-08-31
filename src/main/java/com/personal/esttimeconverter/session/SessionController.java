@@ -1,7 +1,6 @@
 package com.personal.esttimeconverter.session;
 
 import com.personal.esttimeconverter.ConvertForm;
-import com.personal.esttimeconverter.TimeConverter;
 import com.personal.esttimeconverter.roster.Person;
 import com.personal.esttimeconverter.roster.PersonRole;
 import com.personal.esttimeconverter.roster.RosterService;
@@ -16,6 +15,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import com.personal.esttimeconverter.TimeConverter;
 
 import java.io.IOException;
 

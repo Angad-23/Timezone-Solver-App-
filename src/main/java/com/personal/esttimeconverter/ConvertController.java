@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Controller
@@ -67,6 +69,21 @@ public class ConvertController {
 
         List<BulkRow> rows = BulkConverter.convertLines(bulkInput, bulkOffsetHours, bulkDefaultDuration);
         model.addAttribute("bulkRows", rows);
+
+        return "index";
+    }
+
+    @PostMapping("/convert-ist")
+    public String convertIst(@RequestParam LocalDate istDate,
+                             @RequestParam LocalTime istTime,
+                             Model model) {
+        model.addAttribute("form", new ConvertForm());
+        addCommonAttributes(model);
+
+        LocalDateTime istDateTime = istDate.atTime(istTime);
+        model.addAttribute("istResult", IstEstConverter.convert(istDateTime));
+        model.addAttribute("istDate", istDate);
+        model.addAttribute("istTime", istTime);
 
         return "index";
     }

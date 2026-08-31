@@ -2,29 +2,40 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>EST to platform time converter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>EST Time Converter</title>
     <link rel="stylesheet" th:href="@{/styles.css}">
+    <script th:src="@{/app.js}" defer></script>
+    <script th:src="@{/clocks.js}" defer></script>
 </head>
 <body>
 <nav>
-    <a th:href="@{/}" class="active">Sessions</a>
-    <a th:href="@{/roster}">Roster</a>
+    <a th:href="@{/}" class="logo-link">
+        <img th:src="@{/logo.png}" alt="EST Time Converter logo">
+    </a>
+
+    <a th:href="@{/}" class="active">Time Converter</a>
+    <a th:href="@{/roster}">MVTA Users</a>
+    <div class="nav-clocks">
+        <span><span class="clock-label">EST: </span><span id="est-clock"></span></span>
+        <span><span class="clock-label">IST: </span><span id="ist-clock"></span></span>
+    </div>
     <form th:action="@{/logout}" method="post" style="margin-left: auto;">
         <button type="submit" class="secondary" style="padding: 4px 12px; font-size: 13px;">Log out</button>
     </form>
 </nav>
 <main>
-    <h1>EST to platform time converter</h1>
-    <p class="subtitle">Pick a learner and tutor, set the EST time, and get a row ready for the upload sheet.</p>
+    <h1>EST to MyVirtualTAs time converter</h1>
+    <!--    <p class="subtitle">Pick a learner and tutor, set the EST time, and get a row ready for the upload sheet.</p>-->
 
     <div class="flash success" th:if="${message}" th:text="${message}"></div>
     <div class="flash error" th:if="${error}" th:text="${error}"></div>
 
     <section>
-        <h2>New session</h2>
+        <h2><span>01</span> New session</h2>
 
         <div th:if="${#lists.isEmpty(learners) or #lists.isEmpty(tutors)}" class="hint">
-            Add learners and tutors on the <a th:href="@{/roster}">Roster</a> page first — either one by
+            Add learners and tutors on the <a th:href="@{/roster}">Roster</a> page first - either one by
             one or by importing the platform's user export.
         </div>
 
@@ -46,8 +57,8 @@
                 </div>
             </div>
 
-            <label for="subject">Subject</label>
-            <input type="text" id="subject" th:field="*{subject}" placeholder="e.g. Russian">
+            <label for="subject">Subject Identifier</label>
+            <input type="text" id="subject" th:field="*{subject}" placeholder="e.g. English">
             <div class="error" th:if="${#fields.hasErrors('subject')}" th:errors="*{subject}"></div>
 
             <div class="row">
@@ -76,17 +87,17 @@
                     <div class="error" th:if="${#fields.hasErrors('durationMinutes')}" th:errors="*{durationMinutes}"></div>
                 </div>
                 <div>
-                    <label for="offsetHours">Offset hours (platform ahead of EST)</label>
+                    <label for="offsetHours">Offset hours (MyVirtualTAs ahead of EST)</label>
                     <input type="number" id="offsetHours" th:field="*{offsetHours}">
                 </div>
             </div>
 
-            <button type="submit">Add to upload sheet</button>
+            <button type="submit">Add to sheet</button>
         </form>
     </section>
 
     <section>
-        <h2>Upload sheet <span th:if="${!#lists.isEmpty(pendingSessions)}" th:text="'(' + ${#lists.size(pendingSessions)} + ')'"></span></h2>
+        <h2><span>02</span> Upload sheet <span th:if="${!#lists.isEmpty(pendingSessions)}" th:text="'(' + ${#lists.size(pendingSessions)} + ')'"></span></h2>
 
         <p class="empty" th:if="${#lists.isEmpty(pendingSessions)}">No sessions added yet.</p>
 
@@ -102,9 +113,9 @@
             </thead>
             <tbody>
             <tr th:each="row : ${pendingSessions}">
-                <td th:text="${row.learnerName}"></td>
-                <td th:text="${row.tutorName}"></td>
-                <td th:text="${row.teachingSubjectIdentifier}"></td>
+                <td class="person-cell" th:text="${row.learnerName}"></td>
+                <td class="person-cell" th:text="${row.tutorName}"></td>
+                <td class="subject-cell" th:text="${row.teachingSubjectIdentifier}"></td>
                 <td class="mono" th:text="${row.lessonStartTime}"></td>
                 <td class="mono" th:text="${row.lessonEndTime}"></td>
             </tr>
@@ -112,7 +123,7 @@
         </table>
 
         <div class="actions" th:if="${!#lists.isEmpty(pendingSessions)}" style="margin-top: 1rem;">
-            <a th:href="@{/sessions/download}" style="display:inline-block; background: var(--accent); color: white; padding: 10px 18px; border-radius: 6px; font-size: 14px; text-decoration: none;">Download Excel</a>
+            <a th:href="@{/sessions/download}" style="display:inline-block; background: linear-gradient(135deg, var(--teal), var(--teal-dark)); color: white; padding: 10px 22px; border-radius: 999px; font-size: 14px; font-family: var(--font-display); font-weight: 600; text-decoration: none; box-shadow: 0 4px 14px rgba(34,118,111,0.28);">Download Excel</a>
             <form th:action="@{/sessions/clear}" method="post" style="margin: 0;">
                 <button type="submit" class="secondary">Clear all</button>
             </form>
@@ -120,7 +131,7 @@
     </section>
 
     <section>
-        <h2>Just converting one time?</h2>
+        <h2><span>03</span> Convert one time?</h2>
         <form th:action="@{/convert}" th:object="${form}" method="post">
             <div class="row">
                 <div>
@@ -168,11 +179,11 @@
     </section>
 
     <section>
-        <h2>Bulk time conversion</h2>
+        <h2><span>04</span> Bulk time conversion</h2>
         <p class="hint">One lesson per line: <code>yyyy-MM-dd HH:mm,duration</code> (duration is optional, defaults below).</p>
         <form th:action="@{/convert-bulk}" method="post">
             <label for="bulkInput">EST lesson times</label>
-            <textarea id="bulkInput" name="bulkInput" placeholder="2025-05-12 09:00,30&#10;2025-05-13 14:00,45" th:text="${bulkInput}"></textarea>
+            <textarea id="bulkInput" name="bulkInput" placeholder="2026-09-01 09:00,30&#10;2026-09-01 14:00,45" th:text="${bulkInput}"></textarea>
 
             <div class="row">
                 <div>
@@ -205,6 +216,32 @@
         </table>
     </section>
 
+    <section>
+        <h2>IST → EST converter</h2>
+        <p class="hint">Converts real India time to real US Eastern time, switching between EST and EDT
+            automatically based on the date.</p>
+        <form th:action="@{/convert-ist}" method="post">
+            <div class="row">
+                <div>
+                    <label for="istDate">Date (IST)</label>
+                    <input type="date" id="istDate" name="istDate" th:value="${istDate}">
+                </div>
+                <div>
+                    <label for="istTime">Time (IST)</label>
+                    <input type="time" id="istTime" name="istTime" th:value="${istTime}">
+                </div>
+            </div>
+            <button type="submit">Convert</button>
+
+            <div class="result" th:if="${istResult != null}" style="grid-template-columns: 1fr;">
+                <div>
+                    <p class="label" th:text="'Eastern time (' + ${istResult.zoneAbbreviation} + ')'"></p>
+                    <p class="value" th:text="${istResult.easternDateTime}"></p>
+                </div>
+            </div>
+        </form>
+    </section>
+
     <p class="hint">
         Note: this uses a flat offset (default 4 hours). If the platform follows real US Eastern
         clock time rather than fixed EST, the correct offset is 4 hours during Daylight Saving
@@ -212,11 +249,15 @@
         Adjust the offset field above if needed.
     </p>
 </main>
+</main>
 
 <script th:inline="javascript">
     const learners = /*[[${learners}]]*/ [];
     const tutors = /*[[${tutors}]]*/ [];
 
+    // avatarSpan(), colorVarFor(), initialsFor() come from the shared /app.js
+
+    // ---- combobox with colored avatars ----
     function setupCombobox(inputId, hiddenId, optionsId, data) {
         const input = document.getElementById(inputId);
         const hidden = document.getElementById(hiddenId);
@@ -237,7 +278,10 @@
             filtered.forEach((person, i) => {
                 const option = document.createElement('div');
                 option.className = 'combobox-option' + (i === activeIndex ? ' active' : '');
-                option.textContent = label(person);
+                option.appendChild(avatarSpan(person.name));
+                const text = document.createElement('span');
+                text.textContent = label(person);
+                option.appendChild(text);
                 option.addEventListener('mousedown', (e) => {
                     e.preventDefault();
                     select(person);
@@ -300,6 +344,7 @@
 
     setupCombobox('learnerSearch', 'learnerEmail', 'learnerOptions', learners);
     setupCombobox('tutorSearch', 'tutorEmail', 'tutorOptions', tutors);
+    // table avatar/pill decoration is handled automatically by /app.js
 </script>
 </body>
 </html>
