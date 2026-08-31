@@ -9,6 +9,9 @@
 <nav>
     <a th:href="@{/}" class="active">Sessions</a>
     <a th:href="@{/roster}">Roster</a>
+    <form th:action="@{/logout}" method="post" style="margin-left: auto;">
+        <button type="submit" class="secondary" style="padding: 4px 12px; font-size: 13px;">Log out</button>
+    </form>
 </nav>
 <main>
     <h1>EST to platform time converter</h1>
@@ -27,24 +30,18 @@
 
         <form th:action="@{/session/add}" th:object="${sessionForm}" method="post">
             <div class="row">
-                <div>
-                    <label for="learnerEmail">Learner</label>
-                    <select id="learnerEmail" th:field="*{learnerEmail}">
-                        <option value="">Select a learner</option>
-                        <option th:each="learner : ${learners}"
-                                th:value="${learner.email}"
-                                th:text="${learner.name} + ' (' + ${learner.email} + ')'"></option>
-                    </select>
+                <div class="combobox-wrapper">
+                    <label for="learnerSearch">Learner</label>
+                    <input type="text" id="learnerSearch" autocomplete="off" placeholder="Type a name or email...">
+                    <input type="hidden" id="learnerEmail" th:field="*{learnerEmail}">
+                    <div class="combobox-options" id="learnerOptions"></div>
                     <div class="error" th:if="${#fields.hasErrors('learnerEmail')}" th:errors="*{learnerEmail}"></div>
                 </div>
-                <div>
-                    <label for="tutorEmail">Tutor</label>
-                    <select id="tutorEmail" th:field="*{tutorEmail}">
-                        <option value="">Select a tutor</option>
-                        <option th:each="tutor : ${tutors}"
-                                th:value="${tutor.email}"
-                                th:text="${tutor.name} + ' (' + ${tutor.email} + ')'"></option>
-                    </select>
+                <div class="combobox-wrapper">
+                    <label for="tutorSearch">Tutor</label>
+                    <input type="text" id="tutorSearch" autocomplete="off" placeholder="Type a name or email...">
+                    <input type="hidden" id="tutorEmail" th:field="*{tutorEmail}">
+                    <div class="combobox-options" id="tutorOptions"></div>
                     <div class="error" th:if="${#fields.hasErrors('tutorEmail')}" th:errors="*{tutorEmail}"></div>
                 </div>
             </div>
@@ -68,7 +65,14 @@
             <div class="row">
                 <div>
                     <label for="durationMinutes">Duration (minutes)</label>
-                    <input type="number" id="durationMinutes" min="1" step="5" th:field="*{durationMinutes}">
+                    <select id="durationMinutes" th:field="*{durationMinutes}">
+                        <option value="15">15</option>
+                        <option value="30">30</option>
+                        <option value="45">45</option>
+                        <option value="60">60</option>
+                        <option value="90">90</option>
+                        <option value="120">120</option>
+                    </select>
                     <div class="error" th:if="${#fields.hasErrors('durationMinutes')}" th:errors="*{durationMinutes}"></div>
                 </div>
                 <div>
@@ -133,7 +137,14 @@
             <div class="row">
                 <div>
                     <label for="convDuration">Duration (minutes)</label>
-                    <input type="number" id="convDuration" min="1" step="5" th:field="*{durationMinutes}">
+                    <select id="convDuration" th:field="*{durationMinutes}">
+                        <option value="15">15</option>
+                        <option value="30">30</option>
+                        <option value="45">45</option>
+                        <option value="60">60</option>
+                        <option value="90">90</option>
+                        <option value="120">120</option>
+                    </select>
                     <div class="error" th:if="${#fields.hasErrors('durationMinutes')}" th:errors="*{durationMinutes}"></div>
                 </div>
                 <div>
@@ -201,5 +212,94 @@
         Adjust the offset field above if needed.
     </p>
 </main>
+
+<script th:inline="javascript">
+    const learners = /*[[${learners}]]*/ [];
+    const tutors = /*[[${tutors}]]*/ [];
+
+    function setupCombobox(inputId, hiddenId, optionsId, data) {
+        const input = document.getElementById(inputId);
+        const hidden = document.getElementById(hiddenId);
+        const optionsBox = document.getElementById(optionsId);
+        let filtered = [];
+        let activeIndex = -1;
+
+        function label(person) {
+            return person.name + ' (' + person.email + ')';
+        }
+
+        function render() {
+            optionsBox.innerHTML = '';
+            if (filtered.length === 0) {
+                optionsBox.style.display = 'none';
+                return;
+            }
+            filtered.forEach((person, i) => {
+                const option = document.createElement('div');
+                option.className = 'combobox-option' + (i === activeIndex ? ' active' : '');
+                option.textContent = label(person);
+                option.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    select(person);
+                });
+                optionsBox.appendChild(option);
+            });
+            optionsBox.style.display = 'block';
+        }
+
+        function select(person) {
+            input.value = label(person);
+            hidden.value = person.email;
+            optionsBox.style.display = 'none';
+        }
+
+        function filter(query) {
+            const q = query.trim().toLowerCase();
+            filtered = (q === '' ? data : data.filter(p =>
+                p.name.toLowerCase().includes(q) || p.email.toLowerCase().includes(q)
+            )).slice(0, 50);
+            activeIndex = -1;
+            render();
+        }
+
+        input.addEventListener('input', () => {
+            hidden.value = '';
+            filter(input.value);
+        });
+        input.addEventListener('focus', () => filter(input.value));
+        input.addEventListener('blur', () => {
+            setTimeout(() => { optionsBox.style.display = 'none'; }, 150);
+        });
+        input.addEventListener('keydown', (e) => {
+            if (optionsBox.style.display === 'none') return;
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                activeIndex = Math.min(activeIndex + 1, filtered.length - 1);
+                render();
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                activeIndex = Math.max(activeIndex - 1, 0);
+                render();
+            } else if (e.key === 'Enter') {
+                if (activeIndex >= 0 && filtered[activeIndex]) {
+                    e.preventDefault();
+                    select(filtered[activeIndex]);
+                }
+            } else if (e.key === 'Escape') {
+                optionsBox.style.display = 'none';
+            }
+        });
+
+        if (hidden.value) {
+            const existing = data.find(p => p.email === hidden.value);
+            if (existing) {
+                input.value = label(existing);
+            }
+        }
+    }
+
+    setupCombobox('learnerSearch', 'learnerEmail', 'learnerOptions', learners);
+    setupCombobox('tutorSearch', 'tutorEmail', 'tutorOptions', tutors);
+</script>
 </body>
 </html>
