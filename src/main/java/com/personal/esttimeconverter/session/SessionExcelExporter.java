@@ -40,13 +40,13 @@ public final class SessionExcelExporter {
             int rowIndex = 1;
             for (SessionRow r : rows) {
                 Row row = sheet.createRow(rowIndex++);
-                row.createCell(0).setCellValue(r.learnerEmail());
-                row.createCell(1).setCellValue(r.learnerName());
-                row.createCell(2).setCellValue(r.tutorEmail());
-                row.createCell(3).setCellValue(r.tutorName());
-                row.createCell(4).setCellValue(r.lessonStartTime());
-                row.createCell(5).setCellValue(r.lessonEndTime());
-                row.createCell(6).setCellValue(r.teachingSubjectIdentifier());
+                row.createCell(0).setCellValue(r.getLearnerEmail());
+                row.createCell(1).setCellValue(r.getLearnerName());
+                row.createCell(2).setCellValue(r.getTutorEmail());
+                row.createCell(3).setCellValue(r.getTutorName());
+                row.createCell(4).setCellValue(r.getLessonStartTime());
+                row.createCell(5).setCellValue(r.getLessonEndTime());
+                row.createCell(6).setCellValue(r.getTeachingSubjectIdentifier());
             }
 
             for (int i = 0; i < HEADERS.length; i++) {

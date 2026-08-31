@@ -1,7 +1,5 @@
 package com.personal.esttimeconverter.roster;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.CollectionType;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -11,92 +9,49 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Keeps the list of learners and tutors on disk as a small JSON file, so it
- * survives app restarts. Not built for concurrent multi-user access — this
- * app is meant for one person's personal use.
+ * Reads and writes the roster of learners and tutors, backed by the
+ * database (H2 locally, PostgreSQL in production) rather than a local file
+ * — so it survives restarts even on hosting platforms with no persistent
+ * disk.
  */
 @Service
 public class RosterService {
 
-    private final Path rosterFile;
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private final List<Person> people = new CopyOnWriteArrayList<>();
+    private final PersonRepository repository;
 
-    public RosterService(@Value("${app.roster-file:data/roster.json}") String rosterFilePath) throws IOException {
-        this.rosterFile = Path.of(rosterFilePath);
-        load();
-    }
-
-    private synchronized void load() throws IOException {
-        people.clear();
-        if (Files.exists(rosterFile)) {
-            CollectionType listType = objectMapper.getTypeFactory()
-                    .constructCollectionType(List.class, Person.class);
-            List<Person> loaded = objectMapper.readValue(rosterFile.toFile(), listType);
-            people.addAll(loaded);
-        }
-    }
-
-    private synchronized void save() throws IOException {
-        File parent = rosterFile.toFile().getParentFile();
-        if (parent != null && !parent.exists()) {
-            parent.mkdirs();
-        }
-        objectMapper.writerWithDefaultPrettyPrinter().writeValue(rosterFile.toFile(), people);
+    public RosterService(PersonRepository repository) {
+        this.repository = repository;
     }
 
     public List<Person> getLearners() {
-        return byRole(PersonRole.LEARNER);
+        return repository.findByRoleOrderByNameAsc(PersonRole.LEARNER);
     }
 
     public List<Person> getTutors() {
-        return byRole(PersonRole.TUTOR);
-    }
-
-    private List<Person> byRole(PersonRole role) {
-        List<Person> result = new ArrayList<>();
-        for (Person p : people) {
-            if (p.getRole() == role) {
-                result.add(p);
-            }
-        }
-        result.sort(Comparator.comparing(p -> p.getName().toLowerCase(Locale.ROOT)));
-        return result;
+        return repository.findByRoleOrderByNameAsc(PersonRole.TUTOR);
     }
 
     public Person findByEmailAndRole(String email, PersonRole role) {
-        for (Person p : people) {
-            if (p.getRole() == role && p.getEmail().equalsIgnoreCase(email)) {
-                return p;
-            }
-        }
-        return null;
+        return repository.findByEmailIgnoreCaseAndRole(email, role).orElse(null);
     }
 
-    public synchronized void addPerson(String name, String email, PersonRole role) throws IOException {
+    public void addPerson(String name, String email, PersonRole role) {
         if (name == null || name.isBlank() || email == null || email.isBlank()) {
             throw new IllegalArgumentException("Name and email are both required");
         }
         upsert(name.trim(), email.trim(), role);
-        save();
     }
 
     /**
@@ -109,21 +64,18 @@ public class RosterService {
      * such column exists, every row falls back to the given role. Existing
      * entries with the same email and role are updated rather than duplicated.
      */
-    public synchronized ImportResult importFromFile(MultipartFile file, PersonRole fallbackRole) throws IOException {
+    @Transactional
+    public ImportResult importFromFile(MultipartFile file, PersonRole fallbackRole) throws IOException {
         String filename = file.getOriginalFilename();
         String lower = filename == null ? "" : filename.toLowerCase(Locale.ROOT);
 
-        ImportResult result;
         if (lower.endsWith(".csv")) {
-            result = importFromCsv(file, fallbackRole);
+            return importFromCsv(file, fallbackRole);
         } else if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
-            result = importFromExcel(file, fallbackRole);
+            return importFromExcel(file, fallbackRole);
         } else {
             throw new IllegalArgumentException("Unsupported file type — upload a .csv, .xlsx, or .xls file");
         }
-
-        save();
-        return result;
     }
 
     public record ImportResult(int learnersImported, int tutorsImported) {
@@ -251,7 +203,7 @@ public class RosterService {
      * absent, or doesn't mention either role by name.
      */
     private List<PersonRole> rolesFor(String typeText, PersonRole fallbackRole) {
-        List<PersonRole> roles = new ArrayList<>();
+        List<PersonRole> roles = new java.util.ArrayList<>();
         if (typeText != null && !typeText.isBlank()) {
             String lower = typeText.toLowerCase(Locale.ROOT);
             if (lower.contains("learner") || lower.contains("student")) {
@@ -268,13 +220,13 @@ public class RosterService {
     }
 
     private void upsert(String name, String email, PersonRole role) {
-        for (Person p : people) {
-            if (p.getRole() == role && p.getEmail().equalsIgnoreCase(email)) {
-                p.setName(name);
-                return;
-            }
+        Person existing = repository.findByEmailIgnoreCaseAndRole(email, role).orElse(null);
+        if (existing != null) {
+            existing.setName(name);
+            repository.save(existing);
+        } else {
+            repository.save(new Person(name, email, role));
         }
-        people.add(new Person(name, email, role));
     }
 
     private String cellToString(Cell cell) {
@@ -287,4 +239,3 @@ public class RosterService {
         return cell.toString();
     }
 }
-

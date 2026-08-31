@@ -35,7 +35,7 @@ public class RosterController {
         try {
             rosterService.addPerson(name, email, role);
             redirectAttributes.addFlashAttribute("message", "Added " + name + ".");
-        } catch (IllegalArgumentException | IOException e) {
+        } catch (IllegalArgumentException e) {
             redirectAttributes.addFlashAttribute("error", "Couldn't add that person: " + e.getMessage());
         }
         return "redirect:/roster";
