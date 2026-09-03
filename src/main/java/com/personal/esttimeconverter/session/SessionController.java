@@ -71,6 +71,60 @@ public class SessionController {
         return "redirect:/";
     }
 
+    @PostMapping("/session/add-bulk")
+    public String addBulkSessions(@Valid @ModelAttribute("bulkSessionForm") BulkSessionForm form,
+                                  BindingResult bindingResult,
+                                  RedirectAttributes redirectAttributes) {
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("error", "Pick a date, start time, and duration first.");
+            return "redirect:/";
+        }
+
+        TimeConverter.ConvertedTimes times = TimeConverter.convert(
+                form.getDate().atTime(form.getStartTime()),
+                form.getOffsetHours(),
+                form.getDurationMinutes()
+        );
+
+        int added = 0;
+        int skipped = 0;
+
+        for (PairEntry pair : form.getPairs()) {
+            if (pair == null || pair.isBlank()) {
+                continue;
+            }
+
+            Person learner = rosterService.findByEmailAndRole(pair.getLearnerEmail(), PersonRole.LEARNER);
+            Person tutor = rosterService.findByEmailAndRole(pair.getTutorEmail(), PersonRole.TUTOR);
+
+            if (learner == null || tutor == null) {
+                skipped++;
+                continue;
+            }
+
+            sessionService.add(new SessionRow(
+                    learner.getEmail(), learner.getName(),
+                    tutor.getEmail(), tutor.getName(),
+                    times.lessonStartTime(), times.lessonEndTime(),
+                    pair.getSubject()
+            ));
+            added++;
+        }
+
+        if (added == 0) {
+            redirectAttributes.addFlashAttribute("error", "No valid learner/tutor pairs were added.");
+        } else if (skipped > 0) {
+            redirectAttributes.addFlashAttribute("message",
+                    "Added " + added + " sessions at " + times.lessonStartTime()
+                            + " (skipped " + skipped + " pair(s) with an unrecognized learner or tutor).");
+        } else {
+            redirectAttributes.addFlashAttribute("message",
+                    "Added " + added + " sessions, all at " + times.lessonStartTime() + ".");
+        }
+
+        return "redirect:/";
+    }
+
     @PostMapping("/sessions/clear")
     public String clearSessions() {
         sessionService.clear();

@@ -2,42 +2,141 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>MyVTA Users</title>
+    <title>Roster-Lesson_Craft</title>
     <link rel="stylesheet" th:href="@{/styles.css}">
-    <script th:src="@{/app.js}" defer></script>
     <script th:src="@{/clocks.js}" defer></script>
 </head>
 <body>
 <nav>
-    <a th:href="@{/}" class="logo-link">
-        <img th:src="@{/logo.png}" alt="EST Time Converter logo">
-    </a>
-    <a th:href="@{/}">Time Converter</a>
-    <a th:href="@{/roster}" class="active">MVTA Users</a>
-    <div class="nav-clocks">
-        <span><span class="clock-label">EST: </span><span id="est-clock"></span></span>
-        <span><span class="clock-label">IST: </span><span id="ist-clock"></span></span>
-    </div>
-    <form th:action="@{/logout}" method="post" style="margin-left: auto;">
-        <button type="submit" class="secondary" style="padding: 4px 12px; font-size: 13px;">Log out</button>
+    <a th:href="@{/}" class="logo-link"><img th:src="@{/logo.png}" alt="Logo"></a>
+    <a th:href="@{/}">Sessions</a>
+    <a th:href="@{/roster}" class="active">Roster</a>
+    <form th:action="@{/logout}" method="post">
+        <button type="submit" class="secondary">Log out</button>
     </form>
 </nav>
+<!--<div class="clock-widget">
+    <div class="clock-face-wrap">
+        <p class="clock-widget-zone clock-zone-est">EST</p>
+        <svg class="clock-face" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="46" class="clock-face-ring clock-ring-est"/>
+            <line x1="50" y1="8" x2="50" y2="14" class="clock-tick"/>
+            <line x1="92" y1="50" x2="86" y2="50" class="clock-tick"/>
+            <line x1="50" y1="92" x2="50" y2="86" class="clock-tick"/>
+            <line x1="8" y1="50" x2="14" y2="50" class="clock-tick"/>
+            <line id="est-hour" x1="50" y1="50" x2="50" y2="28" class="clock-hand clock-hand-hour"/>
+            <line id="est-minute" x1="50" y1="50" x2="50" y2="18" class="clock-hand clock-hand-minute"/>
+            <line id="est-second" x1="50" y1="50" x2="50" y2="14" class="clock-hand clock-hand-second clock-hand-second-est"/>
+            <circle cx="50" cy="50" r="2.5" class="clock-center"/>
+        </svg>
+        <p class="clock-widget-date" id="est-date-big"></p>
+    </div>
+    <div class="clock-face-wrap">
+        <p class="clock-widget-zone clock-zone-ist">IST</p>
+        <svg class="clock-face" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="46" class="clock-face-ring clock-ring-ist"/>
+            <line x1="50" y1="8" x2="50" y2="14" class="clock-tick"/>
+            <line x1="92" y1="50" x2="86" y2="50" class="clock-tick"/>
+            <line x1="50" y1="92" x2="50" y2="86" class="clock-tick"/>
+            <line x1="8" y1="50" x2="14" y2="50" class="clock-tick"/>
+            <line id="ist-hour" x1="50" y1="50" x2="50" y2="28" class="clock-hand clock-hand-hour"/>
+            <line id="ist-minute" x1="50" y1="50" x2="50" y2="18" class="clock-hand clock-hand-minute"/>
+            <line id="ist-second" x1="50" y1="50" x2="50" y2="14" class="clock-hand clock-hand-second clock-hand-second-ist"/>
+            <circle cx="50" cy="50" r="2.5" class="clock-center"/>
+        </svg>
+        <p class="clock-widget-date" id="ist-date-big"></p>
+    </div>
+</div>-->
+
+<div class="clock-widget">
+    <div class="clock-face-wrap">
+        <p class="clock-widget-zone clock-zone-est">EST</p>
+        <svg class="clock-face" id="est-clock-face" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="46" class="clock-face-ring clock-ring-est"/>
+            <line x1="50" y1="6" x2="50" y2="12" class="clock-tick clock-tick-major"/>
+            <line x1="72" y1="11.9" x2="70" y2="15.4" class="clock-tick"/>
+            <line x1="88.1" y1="28" x2="84.6" y2="30" class="clock-tick"/>
+            <line x1="94" y1="50" x2="88" y2="50" class="clock-tick clock-tick-major"/>
+            <line x1="88.1" y1="72" x2="84.6" y2="70" class="clock-tick"/>
+            <line x1="72" y1="88.1" x2="70" y2="84.6" class="clock-tick"/>
+            <line x1="50" y1="94" x2="50" y2="88" class="clock-tick clock-tick-major"/>
+            <line x1="28" y1="88.1" x2="30" y2="84.6" class="clock-tick"/>
+            <line x1="11.9" y1="72" x2="15.4" y2="70" class="clock-tick"/>
+            <line x1="6" y1="50" x2="12" y2="50" class="clock-tick clock-tick-major"/>
+            <line x1="11.9" y1="28" x2="15.4" y2="30" class="clock-tick"/>
+            <line x1="28" y1="11.9" x2="30" y2="15.4" class="clock-tick"/>
+            <text x="50" y="17" class="clock-number">12</text>
+            <text x="66.5" y="21.4" class="clock-number">1</text>
+            <text x="78.6" y="33.5" class="clock-number">2</text>
+            <text x="83" y="50" class="clock-number">3</text>
+            <text x="78.6" y="66.5" class="clock-number">4</text>
+            <text x="66.5" y="78.6" class="clock-number">5</text>
+            <text x="50" y="83" class="clock-number">6</text>
+            <text x="33.5" y="78.6" class="clock-number">7</text>
+            <text x="21.4" y="66.5" class="clock-number">8</text>
+            <text x="17" y="50" class="clock-number">9</text>
+            <text x="21.4" y="33.5" class="clock-number">10</text>
+            <text x="33.5" y="21.4" class="clock-number">11</text>
+            <line id="est-hour" x1="50" y1="50" x2="50" y2="28" class="clock-hand clock-hand-hour"/>
+            <line id="est-minute" x1="50" y1="50" x2="50" y2="16" class="clock-hand clock-hand-minute"/>
+            <line id="est-second" x1="50" y1="60" x2="50" y2="10" class="clock-hand clock-hand-second clock-hand-second-est"/>
+            <circle cx="50" cy="50" r="3" class="clock-center"/>
+            <circle cx="50" cy="50" r="1.3" class="clock-center-dot"/>
+        </svg>
+        <p class="clock-widget-date" id="est-date-big"></p>
+    </div>
+    <div class="clock-face-wrap">
+        <p class="clock-widget-zone clock-zone-ist">IST</p>
+        <svg class="clock-face" id="ist-clock-face" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="46" class="clock-face-ring clock-ring-ist"/>
+            <line x1="50" y1="6" x2="50" y2="12" class="clock-tick clock-tick-major"/>
+            <line x1="72" y1="11.9" x2="70" y2="15.4" class="clock-tick"/>
+            <line x1="88.1" y1="28" x2="84.6" y2="30" class="clock-tick"/>
+            <line x1="94" y1="50" x2="88" y2="50" class="clock-tick clock-tick-major"/>
+            <line x1="88.1" y1="72" x2="84.6" y2="70" class="clock-tick"/>
+            <line x1="72" y1="88.1" x2="70" y2="84.6" class="clock-tick"/>
+            <line x1="50" y1="94" x2="50" y2="88" class="clock-tick clock-tick-major"/>
+            <line x1="28" y1="88.1" x2="30" y2="84.6" class="clock-tick"/>
+            <line x1="11.9" y1="72" x2="15.4" y2="70" class="clock-tick"/>
+            <line x1="6" y1="50" x2="12" y2="50" class="clock-tick clock-tick-major"/>
+            <line x1="11.9" y1="28" x2="15.4" y2="30" class="clock-tick"/>
+            <line x1="28" y1="11.9" x2="30" y2="15.4" class="clock-tick"/>
+            <text x="50" y="17" class="clock-number">12</text>
+            <text x="66.5" y="21.4" class="clock-number">1</text>
+            <text x="78.6" y="33.5" class="clock-number">2</text>
+            <text x="83" y="50" class="clock-number">3</text>
+            <text x="78.6" y="66.5" class="clock-number">4</text>
+            <text x="66.5" y="78.6" class="clock-number">5</text>
+            <text x="50" y="83" class="clock-number">6</text>
+            <text x="33.5" y="78.6" class="clock-number">7</text>
+            <text x="21.4" y="66.5" class="clock-number">8</text>
+            <text x="17" y="50" class="clock-number">9</text>
+            <text x="21.4" y="33.5" class="clock-number">10</text>
+            <text x="33.5" y="21.4" class="clock-number">11</text>
+            <line id="ist-hour" x1="50" y1="50" x2="50" y2="28" class="clock-hand clock-hand-hour"/>
+            <line id="ist-minute" x1="50" y1="50" x2="50" y2="16" class="clock-hand clock-hand-minute"/>
+            <line id="ist-second" x1="50" y1="60" x2="50" y2="10" class="clock-hand clock-hand-second clock-hand-second-ist"/>
+            <circle cx="50" cy="50" r="3" class="clock-center"/>
+            <circle cx="50" cy="50" r="1.3" class="clock-center-dot"/>
+        </svg>
+        <p class="clock-widget-date" id="ist-date-big"></p>
+    </div>
+</div>
+</div>
 <main>
-    <h1>Users</h1>
-<!--    <p class="subtitle">Your saved learners and tutors, so you can pick them from a list instead of retyping names and emails.</p>-->
+    <h1>Roster</h1>
+    <p class="subtitle">Your saved learners and tutors, so you can pick them from a list instead of retyping names and emails.</p>
 
     <div class="flash success" th:if="${message}" th:text="${message}"></div>
     <div class="flash error" th:if="${error}" th:text="${error}"></div>
 
     <section>
-        <h2><span>01</span> Import MyVirtualTAs users</h2>
-        <p class="hint">Upload the file - .csv, .xlsx, or .xls. Needs a
-            header row with a column containing "name" and a column containing "email". A value such as "Learner | Tutor" adds that user to both lists automatically.</p>
+        <h2><span class="section-number">01</span>Import from the platform's user export</h2>
+        <p class="hint">Upload the file the platform exports - .csv, .xlsx, or .xls all work.</p>
         <form th:action="@{/roster/import}" method="post" enctype="multipart/form-data">
             <div class="row">
                 <div>
-                    <label for="importRole">Fallback role (incase of no Type/Role column)</label>
+                    <label for="importRole">Fallback role (only used if the file has no Type/Role column)</label>
                     <select id="importRole" name="role">
                         <option value="LEARNER">Learner</option>
                         <option value="TUTOR">Tutor</option>
@@ -53,7 +152,7 @@
     </section>
 
     <section>
-        <h2><span>02</span> Add one person manually</h2>
+        <h2><span class="section-number">02</span>Add one person manually</h2>
         <form th:action="@{/roster/add}" method="post">
             <div class="row">
                 <div>
@@ -62,7 +161,7 @@
                 </div>
                 <div>
                     <label for="addEmail">Email</label>
-                    <input type="email" id="addEmail" name="email" placeholder="name@sample.com">
+                    <input type="email" id="addEmail" name="email" placeholder="angadexample.com">
                 </div>
             </div>
             <label for="addRole">Role</label>
@@ -75,31 +174,34 @@
     </section>
 
     <section>
-        <h2><span>03</span> Learners <span th:if="${!#lists.isEmpty(learners)}" th:text="'(' + ${#lists.size(learners)} + ')'"></span></h2>
-        <p class="empty" th:if="${#lists.isEmpty(learners)}">No learners saved yet.</p>
-        <table th:if="${!#lists.isEmpty(learners)}">
-            <thead><tr><th>Name</th><th>Email</th></tr></thead>
-            <tbody>
-            <tr th:each="learner : ${learners}">
-                <td class="person-cell" th:text="${learner.name}"></td>
-                <td class="mono" th:text="${learner.email}"></td>
-            </tr>
-            </tbody>
-        </table>
-    </section>
-
-    <section>
-        <h2><span>04</span> Tutors <span th:if="${!#lists.isEmpty(tutors)}" th:text="'(' + ${#lists.size(tutors)} + ')'"></span></h2>
-        <p class="empty" th:if="${#lists.isEmpty(tutors)}">No tutors saved yet.</p>
-        <table th:if="${!#lists.isEmpty(tutors)}">
-            <thead><tr><th>Name</th><th>Email</th></tr></thead>
-            <tbody>
-            <tr th:each="tutor : ${tutors}">
-                <td class="person-cell" th:text="${tutor.name}"></td>
-                <td class="mono" th:text="${tutor.email}"></td>
-            </tr>
-            </tbody>
-        </table>
+        <div class="row">
+            <div>
+                <h2><span class="section-number">03</span>Learners <span th:if="${!#lists.isEmpty(learners)}" th:text="'(' + ${#lists.size(learners)} + ')'"></span></h2>
+                <p class="empty" th:if="${#lists.isEmpty(learners)}">No learners saved yet.</p>
+                <table th:if="${!#lists.isEmpty(learners)}">
+                    <thead><tr><th>Name</th><th>Email</th></tr></thead>
+                    <tbody>
+                    <tr th:each="learner : ${learners}">
+                        <td th:text="${learner.name}"></td>
+                        <td th:text="${learner.email}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div>
+                <h2><span class="section-number">04</span>Tutors <span th:if="${!#lists.isEmpty(tutors)}" th:text="'(' + ${#lists.size(tutors)} + ')'"></span></h2>
+                <p class="empty" th:if="${#lists.isEmpty(tutors)}">No tutors saved yet.</p>
+                <table th:if="${!#lists.isEmpty(tutors)}">
+                    <thead><tr><th>Name</th><th>Email</th></tr></thead>
+                    <tbody>
+                    <tr th:each="tutor : ${tutors}">
+                        <td th:text="${tutor.name}"></td>
+                        <td th:text="${tutor.email}"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </section>
 </main>
 </body>
