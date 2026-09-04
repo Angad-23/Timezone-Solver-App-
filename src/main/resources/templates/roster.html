@@ -2,7 +2,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Roster-Lesson_Craft</title>
+    <title>Roster-LessonCraft</title>
     <link rel="stylesheet" th:href="@{/styles.css}">
     <script th:src="@{/clocks.js}" defer></script>
 </head>
@@ -132,11 +132,11 @@
 
     <section>
         <h2><span class="section-number">01</span>Import from the platform's user export</h2>
-        <p class="hint">Upload the file the platform exports - .csv, .xlsx, or .xls all work.</p>
+        <p class="hint">Upload the file the platform exports - .csv, .xlsx, or .xls.</p>
         <form th:action="@{/roster/import}" method="post" enctype="multipart/form-data">
             <div class="row">
                 <div>
-                    <label for="importRole">Fallback role (only used if the file has no Type/Role column)</label>
+                    <label for="importRole">Fallback role (if the file has no Type/Role column)</label>
                     <select id="importRole" name="role">
                         <option value="LEARNER">Learner</option>
                         <option value="TUTOR">Tutor</option>
@@ -161,7 +161,7 @@
                 </div>
                 <div>
                     <label for="addEmail">Email</label>
-                    <input type="email" id="addEmail" name="email" placeholder="angadexample.com">
+                    <input type="email" id="addEmail" name="email" placeholder="angad@domain.com">
                 </div>
             </div>
             <label for="addRole">Role</label>
